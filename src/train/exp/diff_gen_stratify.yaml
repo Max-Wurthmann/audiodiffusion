@@ -1,0 +1,128 @@
+# @package _global_
+
+sample_rate: 32000
+length: 1048576 #2**20 (crop length)
+audio_channels: 2
+diff_gen_channels: 32
+audio_max_duration: 32 
+
+batch_size: 32
+num_workers: 8
+prefetch_factor: 2
+stratify: True
+
+text_encoder_max_length: 128 
+text_encoder_features: 768 # t5-base default
+
+log_every_n_steps: 1000
+fast_dev_run: null
+wandb_offline: False
+wandb_run_id: rghdvij5 #use to resume run
+
+# only provide ckpt if you want to start from that ckpt
+ckpt: ${logs_dir}/ckpts/2024-01-10-14-08-56/last.ckpt
+
+model:
+  _target_: main.models.DiffGen
+  lr: 1e-4
+  lr_beta1: 0.95
+  lr_beta2: 0.999
+  lr_eps: 1e-6
+  lr_weight_decay: 1e-3
+  ema_beta: 0.995
+  ema_power: 0.7
+  cfg_mask_prob: 0.1
+  text_encoder_name: "t5-base"
+  text_encoder_max_length: ${text_encoder_max_length}
+
+  model:
+    _target_: main.models.get_default_diffgen
+    state_dict_file: null
+
+  diffae: 
+    _target_: main.models.get_default_diffae
+    state_dict_file: ${logs_dir}/ckpts/diffae_state_dict
+
+
+datamodule:
+  _target_: main.datamodules.AudioDataModule
+  datasets: 
+  - 
+    _target_: main.datamodules.XenoCantoAudioDataset
+    sample_rate: ${sample_rate}
+    channels: ${audio_channels}
+    data_dir: /data/xeno-canto/xeno_canto_full_32000
+    metadata_dir: ${meta_dir}/xeno_canto
+    max_duration: ${audio_max_duration}
+    return_labels: True
+    label_col_name: "simple_label"
+    
+  - 
+    _target_: main.datamodules.BergmanAudioDataset
+    sample_rate: ${sample_rate}
+    channels: ${audio_channels}
+    metadata_file: ${meta_dir}/bergman_en.csv
+    max_duration: ${audio_max_duration}
+    return_labels: True
+    
+  batch_size: ${batch_size}
+  crop_length: ${length}
+  num_workers: ${num_workers}
+  shuffle: True
+  pin_memory: True
+  prefetch_factor: ${prefetch_factor}
+  train_val_test_split: [0.85, 0.1, 0.05]
+  return_labels: True
+  seed: ${seed}
+  stratify: ${stratify}
+  verbose: True
+
+
+callbacks:
+  rich_progress_bar:
+    _target_: pytorch_lightning.callbacks.RichProgressBar
+
+  model_checkpoint:
+    _target_: pytorch_lightning.callbacks.ModelCheckpoint
+    monitor: "valid_loss"   # name of the logged metric which determines when model is improving
+    mode: "min"             # can be "max" or "min"
+    save_top_k: 2           # save k best models (determined by above metric in above mode)
+    save_last: True         # additionally always save model from last epoch
+    verbose: False
+    dirpath: ${logs_dir}/ckpts/${now:%Y-%m-%d-%H-%M-%S}
+    filename: '{epoch:02d}-{valid_loss:.3f}'
+
+  model_summary:
+    _target_: pytorch_lightning.callbacks.RichModelSummary
+    max_depth: 2
+
+
+loggers:
+  wandb:
+    _target_: pytorch_lightning.loggers.wandb.WandbLogger
+    project: "audioDiffusion"
+    entity: "mx-wurthmann"
+    offline: ${wandb_offline}  # set True to store all logs only locally
+    job_type: "train"
+    id: ${wandb_run_id}
+    group: ""
+    save_dir: ${logs_dir}
+
+
+trainer:
+  _target_: pytorch_lightning.Trainer
+  devices: -1 # Set `1` to train on GPU, `0` to train on CPU only, and `-1` to train on all GPUs, default `0`
+  precision: 32 # Precision used for tensors, default `32`
+  accelerator: "gpu"
+  strategy:
+    _target_: pytorch_lightning.strategies.DDPStrategy
+    find_unused_parameters: True
+  min_epochs: 0
+  max_epochs: -1
+  # profiler: "simple"
+  enable_model_summary: False
+  log_every_n_steps: 1 # Logs metrics every N batches
+  check_val_every_n_epoch: null
+  limit_val_batches: 20
+  val_check_interval: ${log_every_n_steps}
+  fast_dev_run: ${fast_dev_run}

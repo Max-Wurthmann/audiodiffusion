@@ -1,0 +1,23 @@
+defaults:
+  - _self_
+  - exp: diff_gen_stratify.yaml
+  - override hydra/hydra_logging: colorlog
+  - override hydra/job_logging: colorlog
+
+seed: 12345
+train: True
+ignore_warnings: False 
+print_config: False # Prints tree with all configurations
+work_dir: ${hydra:runtime.cwd}  # This is the root of the project
+logs_dir: /data/logs # see also hydra.job.env_set: DIR_LOGS
+meta_dir: /data/meta
+ckpt_dir: ${logs_dir}/ckpts/${now:%Y-%m-%d-%H-%M-%S}
+
+# Hydra experiment configs log dir
+hydra:
+  run:
+    dir: ${logs_dir}/runs/${now:%Y-%m-%d-%H-%M-%S}
+  job:
+    env_set:
+      DIR_LOGS: /data/logs # should be same as logs_dir
+      TOKENIZERS_PARALLELISM: true
