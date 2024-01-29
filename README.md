@@ -5,15 +5,14 @@ The model consists of two components, a DDIM-based diffusion autoencoder (DiffAE
 For both components the pytorch implementation of [`audio-diffusion-pytorch`](https://github.com/archinetai/audio-diffusion-pytorch/) is used.
 For a detailed explanation of the architecture as well as notes on training and performance please also refer to the paper that is the basis for this work: [`Moûsai`](https://arxiv.org/abs/2301.11757).
 
-
 ## Content
 
 - [Audio Diffusion](#audio-diffusion)
   - [Content](#content)
   - [Setup](#setup)
   - [Models](#models)
-    - [Diffusion AutoEncoder (Component 1)](#diffusion-autoencoder-component-1)
-    - [Text-Conditional Diffusion Generator (Component 2)](#text-conditional-diffusion-generator-component-2)
+    - [Diffusion Autoencoder](#diffusion-autoencoder)
+    - [Text-Conditional Diffusion Generator](#text-conditional-diffusion-generator)
     - [Combined Diffusion Sampler](#combined-diffusion-sampler)
   - [Training](#training)
     - [Training the Diffusion AutoEncoder](#training-the-diffusion-autoencoder)
