@@ -15,17 +15,18 @@ latent_length = 2048
 embedding_scale = 5
 sr = 32000
 batch_size = 8
+model_version = "v3"
 
 filtered = False
 
 out_dir = "/data/tests/generated"
 scale_str = str(embedding_scale).replace(".", ",")
-experiment_name = f"steps{sampling_steps}_scale{scale_str}_v3"
+experiment_name = f"steps{sampling_steps}_scale{scale_str}_{model_version}"
 exp_dir = os.path.join(out_dir, experiment_name)
 config_file = exp_dir + ".json"
 os.makedirs(exp_dir, exist_ok=True)
 
-diffgen = "/data/logs/ckpts/diffgen_v3.pth"
+diffgen = f"/data/logs/ckpts/diffgen_{model_version}.pth"
 model = get_default_combined_sampler(diffgen_state_dict_file=diffgen)
 
 
@@ -39,6 +40,7 @@ labels = test_data["label"]
 files = test_data["file"]
 
 config = dict(
+    exp=experiment_name,
     n=n,
     sampling_steps=sampling_steps,
     decoding_steps=decoding_steps,
@@ -48,7 +50,6 @@ config = dict(
     batch_size=batch_size,
     diffgen=diffgen,
     filtered=filtered,
-    ds_len=len(test_data),
 )
     
 print(config)
